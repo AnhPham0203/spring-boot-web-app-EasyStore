@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:replace="~{base::layout(~{::section})}">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Modern Product List</title>
+	<!--<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">-->
+	<link rel="stylesheet" href="/css/styleProduct.css">
+</head>
+<style>
+	.product-image-container {
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		height: 250px;
+		/* Chiều cao cố định cho khung chứa ảnh */
+		overflow: hidden;
+	}
+
+	.product-image-container img {
+		width: auto;
+		height: 100%;
+		max-width: 100%;
+		object-fit: cover;
+	}
+</style>
+
+<body>
+	<section>
+
+
+		<div class="container-fluid mt-5 p-4 mt-5">
+			<!-- Search and Filter Section -->
+			<div class="row mb-4">
+
+				<!-- Input và Button Search nằm ở cuối bên trái -->
+				<div class="row mb-4">
+					<!-- Form tìm kiếm -->
+					<div class="col-6 d-flex justify-content-start align-items-center">
+						<form action="/products" method="get" class="d-flex w-100">
+							<input type="text" name="search" class="form-control me-2" placeholder="Search products..."
+								style="flex: 1;">
+							<button class="btn btn-primary" type="submit" style="flex: 0 0 20%;">Search</button>
+						</form>
+					</div>
+
+					<!-- Dropdown Sort -->
+					<div class="col-6 d-flex justify-content-end align-items-center">
+						<th:block th:if="${paramValue == '' && search == ''}">
+							<select class="form-select" name="sort"
+								onchange="location.href='/products?sort=' + this.value" style="max-width: 40%;">
+								<option value="" selected>Sort by</option>
+								<option value="price_asc" th:selected="${sort == 'price_asc'}">Price: Low to High
+								</option>
+								<option value="price_desc" th:selected="${sort == 'price_desc'}">Price: High to Low
+								</option>
+							</select>
+						</th:block>
+
+					</div>
+				</div>
+
+			</div>
+
+
+			<!--<div class="row">
+				<div class="col-8">
+
+				</div>
+				
+			</div>-->
+
+
+			<!-- Product List Section -->
+			<div class="row">
+				<div class="col-md-2 mb-4">
+					<select class="form-select" onchange="location.href='/products?category=' + this.value">
+						<!-- Tùy chọn cho All Categories -->
+						<option value="" th:selected="${paramValue == ''}" selected>All Categories</option>
+
+						<!-- Tùy chọn cho các category -->
+						<option th:each="c:${categories}" th:value="${c.name}" th:text="${c.name}"
+							th:selected="${paramValue == c.name}">
+							[[${c.name}]]
+						</option>
+					</select>
+				</div>
+				<div class="col-md-10 mb-4">
+
+					<div class="row" id="productDetail">
+
+					</div>
+
+					<!-- Pagination Section -->
+					<div class="row">
+						<div class="col-md-4">Total Products : [[${totalElements}]]</div>
+						<div class="col-md-6">
+							<nav>
+								<th:block th:if="${productsSize>0}">
+									<ul class="pagination justify-content-center">
+										<li class="page-item" th:classappend="${isFirst} ? 'disabled':''">
+											<a class="page-link" th:href="@{'/products?pageNo='+${pageNo-1}}">
+												Previous
+											</a>
+										</li>
+										<li th:each="i:${#numbers.sequence(1,totalPages)}" class="page-item"
+											th:classappend="${pageNo+1==i}?'active':''">
+											<a class="page-link" th:href="@{'/products?pageNo='+${i-1}}">[[${i}]]
+											</a>
+										</li>
+										<li class="page-item" th:classappend="${isLast} ? 'disabled':''">
+											<a class="page-link" th:href="@{'/products?pageNo='+${pageNo+1}}">
+												Next
+											</a>
+										</li>
+									</ul>
+								</th:block>
+							</nav>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+	<!--<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>-->
+</body>
+</html>
+
+<script>
+	$(document).ready(function () {
+		$.ajax({
+			type: "POST",
+			url: "http://localhost:8081/productsJSON?pageNo=",
+			data: null,
+			contentType: "application/json; charset=utf-8",
+			dataType: "json",
+			success: function (data) {
+				// Loop through the data and render it
+				var productList = $('#productDetail');
+				productList.empty(); // Clear the list before adding items
+				if(data.listProducts == null || data.listProducts.length == 0){
+					var dataItem = `		<p class="fs-4 text-center mt-4 text-danger">Product not
+														available</p>`;		
+									productList.append(dataItem);
+				}else {
+					$.each(data.listProducts, function (index, product) {
+										var image = "/img/product_img/" + product.image;
+										var dataItem = `	<div class="col-md-3 mb-4">
+											  							  		<div class="card product-card">
+											  							  			<div class="product-image-container">
+											  							  				<img src="`+ image + `" class="card-img-top" alt="Product Image">
+											  							  			</div>
+											  							  				<div class="card-body text-center">
+											  							  										<h5 class="card-title">`+ product.title + `</h5>
+											  							  										<p class="fs-6 fw-bold " style="min-height: 50px;">
+											  							  											<span>$ `+ product.discountPrice + `</span> <br>
+											  							  											
+											  							  												<span class="text-decoration-line-through text-secondary">$
+											  							  													`+ product.price + `</span>
+											  							  												<span class="fs-6 text-success">`+ product.discount + `%
+											  							  													off
+											  							  												</span>	
+											  							  										</p>
+											  							  										<a href="/product/`+product.id+`" class="btn btn-outline-primary">View
+											  							  											Details</a>
+											  							  									</div>
+											  							  								</div>
+											  							  							</div>`
+																									
+										productList.append(dataItem);
+									});
+				}
+			},
+
+		});
+	});
+</script>
