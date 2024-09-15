@@ -49,7 +49,7 @@ public class HomeController {
 
 	@Autowired
 	private UserService userService;
-	
+
 	@Autowired
 	private CartService cartService;
 
@@ -119,7 +119,6 @@ public class HomeController {
 	}
 
 	// load products by Ajax
-
 	@GetMapping("/products/load")
 	@ResponseBody
 	public List<Product> productsAjax(Model model, @RequestParam(value = "category", defaultValue = "") String category,
@@ -127,7 +126,7 @@ public class HomeController {
 			@RequestParam(name = "pageSize", defaultValue = "10") Integer pageSize,
 			@RequestParam(value = "search", defaultValue = "") String search,
 			@RequestParam(value = "sort", defaultValue = "") String sort) {
-		System.out.println("search : " + search + "---pageNo :" + pageNo);
+
 		List<Category> categories = categoryService.findByIsActiveTrue();
 		model.addAttribute("categories", categories);
 		model.addAttribute("paramValue", category);
@@ -189,14 +188,20 @@ public class HomeController {
 
 			if (!ObjectUtils.isEmpty(saveUser)) {
 				if (!file.isEmpty()) {
-					File saveFile = new ClassPathResource("static/img").getFile();
-					Path path = Paths.get(saveFile.getAbsolutePath() + File.separator + "profile_img" + File.separator
-							+ file.getOriginalFilename());
+					Path saveDirectory = Paths.get("src/main/resources/static/img/profile_img");
 
-					System.out.println("path :" + path);
+					// Tạo thư mục nếu chưa tồn tại
+					if (!Files.exists(saveDirectory)) {
+						Files.createDirectories(saveDirectory);
+					}
+
+					// Tạo đường dẫn tới tệp cần lưu
+					Path path = saveDirectory.resolve(file.getOriginalFilename());	
+					System.out.println("Path " + path);
+					// Lưu tệp
 					Files.copy(file.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
+					session.setAttribute("succMsg", "Register successfully");
 				}
-				session.setAttribute("succMsg", "Register successfully");
 			} else {
 				session.setAttribute("errorMsg", "something wrong on server");
 			}

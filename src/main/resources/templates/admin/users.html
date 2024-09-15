@@ -13,6 +13,11 @@
 				<div class="card-header text-center">
 					<p class="fs-4" th:if="${userType==1}">Users</p>
 					<p class="fs-4" th:if="${userType==2}">Admin</p>
+					<div class="d-flex justify-content-start">
+					    <a href="/admin/" class="text-decoration-none">
+					        <i class="fa-solid fa-arrow-left"></i> Back
+					    </a>
+					</div>
 					<th:block th:if="${session.succMsg}">
 						<p class="text-success fw-bold">[[${session.succMsg}]]</p>
 						<th:block th:text="${@commnServiceImpl.removeSessionMessage()}"></th:block>

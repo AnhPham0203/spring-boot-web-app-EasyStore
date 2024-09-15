@@ -52,4 +52,12 @@ public class SecurityConfig {
 
 		return http.build();
 	}
+
+//	@Bean
+//	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+//		// Tắt tất cả các yêu cầu xác thực
+//		http.csrf(csrf -> csrf.disable()).cors(cors -> cors.disable())
+//				.authorizeHttpRequests(req -> req.anyRequest().permitAll());
+//		return http.build();
+//	}
 }

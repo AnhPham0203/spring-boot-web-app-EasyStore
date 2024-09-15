@@ -15,6 +15,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.ObjectUtils;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -32,6 +33,7 @@ import com.apn.ecomercAP.service.UserService;
 
 import io.micrometer.common.util.StringUtils;
 import jakarta.servlet.http.HttpSession;
+import jakarta.validation.Valid;
 
 @Controller
 @RequestMapping("/admin")
@@ -160,5 +162,183 @@ public class AdminController {
 		}
 
 		return "redirect:/admin/loadAddProduct";
+	}
+
+	@GetMapping("/category")
+	public String viewCategory(Model model, @RequestParam(name = "pageNo", defaultValue = "0") Integer pageNo,
+			@RequestParam(name = "pageSize", defaultValue = "10") Integer pageSize) {
+		/* List<Category> categorys = categoryService.getAllCategories(); */
+		Page<Category> pageCategory = categoryService.getAllCategoriesPagination(pageNo, pageSize);
+		model.addAttribute("pageNo", pageCategory.getNumber());
+//		model.addAttribute("pageSize", pageSize);
+		model.addAttribute("categorys", pageCategory.getContent());
+		model.addAttribute("isFirst", pageCategory.isFirst());
+		model.addAttribute("isLast", pageCategory.isLast());
+		model.addAttribute("totalPages", pageCategory.getTotalPages());
+		model.addAttribute("totalElements", pageCategory.getTotalElements());
+		return "admin/category";
+	}
+
+	@PostMapping("/saveCategory")
+	public String saveCategory(@Valid @ModelAttribute Category category, BindingResult rs,
+			@RequestParam("file") MultipartFile file, HttpSession session, Model model) throws IOException {
+//		if (rs.hasErrors()) {
+//			System.out.println("ANHPHAM");
+////			model.addAttribute("category", category);
+//			return "admin/category"; // Trả về form nếu có lỗi validation
+//		}
+
+		String imageName;
+		if (file != null) {
+			imageName = file.getOriginalFilename();
+		} else {
+			imageName = "default.png";
+		}
+		category.setImageName(imageName);
+		boolean exists = categoryService.checkExitstCategoryName(category.getName());
+		if (exists) {
+			session.setAttribute("errorMsg", "Category Name already exists");
+		} else {
+			Category saveCategory = categoryService.saveCategory(category);
+			if (ObjectUtils.isEmpty(saveCategory)) {
+				session.setAttribute("errorMsg", "Not saved ! internal server error");
+			} else {
+
+				File saveFile = new ClassPathResource("static/img").getFile();
+
+				Path path = Paths.get(saveFile.getAbsolutePath() + File.separator + "category_img" + File.separator
+						+ file.getOriginalFilename());
+
+				// System.out.println(path);
+				Files.copy(file.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
+				session.setAttribute("succMsg", "Saved successfully");
+			}
+
+		}
+
+		return "redirect:/admin/category";
+	}
+
+	@GetMapping("/deleteCategory/{cid}")
+	public String deleteCategory(@PathVariable int cid, HttpSession session) {
+		Boolean deleteCategory = categoryService.deleteCategory(cid);
+		if (deleteCategory) {
+			session.setAttribute("succMsg", "category delete success");
+		} else {
+			session.setAttribute("errorMsg", "something wrong on server");
+		}
+		return "redirect:/admin/category";
+	}
+
+	@GetMapping("/loadEditCategory/{id}")
+	public String loadEditCategory(@PathVariable() Integer id, Model model) {
+		Category category = categoryService.getCategoryById(id);
+		model.addAttribute("category", category);
+		return "/admin/edit_category";
+	}
+
+	@PostMapping("/updateCategory")
+	public String updateCategory(@ModelAttribute Category category, @RequestParam("file") MultipartFile file,
+			HttpSession session) throws IOException {
+
+		Category oldCategory = categoryService.getCategoryById(category.getId());
+
+		String imageName = file == null ? oldCategory.getImageName() : file.getOriginalFilename();
+
+		oldCategory.setImageName(imageName);
+		oldCategory.setName(category.getName());
+		oldCategory.setIsActive(category.getIsActive());
+
+		Category updateCategory = categoryService.saveCategory(oldCategory);
+
+		if (!ObjectUtils.isEmpty(updateCategory)) {
+
+			if (!file.isEmpty()) {
+				File saveFile = new ClassPathResource("static/img").getFile();
+
+				Path path = Paths.get(saveFile.getAbsolutePath() + File.separator + "category_img" + File.separator
+						+ file.getOriginalFilename());
+
+				// System.out.println(path);
+				Files.copy(file.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
+			}
+
+			session.setAttribute("succMsg", "Category update success");
+		} else {
+			session.setAttribute("errorMsg", "something wrong on server");
+		}
+		return "redirect:/admin/loadEditCategory/" + category.getId();
+	}
+
+	@GetMapping("/users")
+	public String getUsers(@RequestParam(name = "type") Integer type, Model model) {
+		List<UserDtls> users = null;
+		if (type == 1) {
+			String role = "ROLE_USER";
+			users = userService.getUserByRole(role);
+		} else {
+			String role = "ROLE_ADMIN";
+			users = userService.getUserByRole(role);
+		}
+		model.addAttribute("users", users);
+		model.addAttribute("userType", type);
+		return "admin/users";
+	}
+
+	@GetMapping("/updateSts")
+	public String updateStatus(@RequestParam("type") Integer type, @RequestParam("id") Integer id,
+			@RequestParam("status") Boolean status, HttpSession session) {
+		boolean check = userService.changeStatus(id, status);
+		if (check) {
+			session.setAttribute("succMsg", "Account status updated success");
+		} else {
+			session.setAttribute("errorMsg", "something wrong on server");
+		}
+
+		return "redirect:/admin/users?type=" + type;
+	}
+	
+	@GetMapping("/add-admin")
+	public String showAddAdmin( Model model) {
+	
+		return "/admin/add_admin";
+	}
+	
+	@PostMapping("/save-admin")
+	public String saveUser(@ModelAttribute UserDtls user, HttpSession session, @RequestParam("img") MultipartFile file)
+			throws IOException {
+		Boolean existsEmail = userService.checkExitsEmail(user.getEmail());
+
+		if (existsEmail) {
+
+			session.setAttribute("errorMsg", "Email already exists");
+		} else {
+			String imageName = file.isEmpty() ? "default.ap" : file.getOriginalFilename();
+			user.setProfileImage(imageName);
+			UserDtls saveAdmin = userService.saveAdmin(user);
+
+			if (!ObjectUtils.isEmpty(saveAdmin)) {
+				if (!file.isEmpty()) {
+					Path saveDirectory = Paths.get("src/main/resources/static/img/profile_img");
+
+					// Tạo thư mục nếu chưa tồn tại
+					if (!Files.exists(saveDirectory)) {
+						Files.createDirectories(saveDirectory);
+					}
+
+					// Tạo đường dẫn tới tệp cần lưu
+					Path path = saveDirectory.resolve(file.getOriginalFilename());	
+					System.out.println("Path " + path);
+					// Lưu tệp
+					Files.copy(file.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
+				
+					session.setAttribute("succMsg", "Register successfully");
+				}
+			} else {
+				session.setAttribute("errorMsg", "something wrong on server");
+			}
+		}
+
+		return "redirect:/admin/add-admin";
 	}
 }

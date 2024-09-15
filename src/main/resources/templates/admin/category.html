@@ -13,6 +13,11 @@
 					<div class="card card-sh">
 						<div class="card-header text-center ">
 							<p class="fs-4">Add Category</p>
+							<div class="d-flex justify-content-start">
+							    <a href="/admin/" class="text-decoration-none">
+							        <i class="fa-solid fa-arrow-left"></i> Back
+							    </a>
+							</div>
 							<th:block th:if="${session.succMsg}">
 								<p class="text-success fw-bold">[[${session.succMsg}]]</p>
 								<th:block th:text="${@commnServiceImpl.removeSessionMessage()}"></th:block>
@@ -28,8 +33,9 @@
 							<form action="/admin/saveCategory" method="post"
 								enctype="multipart/form-data">
 								<div class="mb-3">
-									<label>Enter Category</label> <input type="text" name="name"
-										class="form-control">
+									<label>Enter Category</label> 
+									<input type="text" name="name" class="form-control">
+									<!--<p th:if="${#fields.hasErrors('name')}" th:errors="*{name}">Category name error</p>-->
 								</div>
 
 								<div class="mb-3">

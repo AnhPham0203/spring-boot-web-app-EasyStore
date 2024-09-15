@@ -58,7 +58,7 @@ public class AuthFailureHandlerImpl extends SimpleUrlAuthenticationFailureHandle
 				exception = new LockedException("your account is inactive");
 			}
 		} else {
-			exception = new LockedException("Email & password invalid haha");
+			exception = new LockedException("Email & password invalid ");
 		}
 
 		super.setDefaultFailureUrl("/signin?error");

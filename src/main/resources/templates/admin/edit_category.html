@@ -12,7 +12,13 @@
 				<div class="col-md-3 offset-md-5">
 					<div class="card card-sh">
 						<div class="card-header text-center ">
+							
 							<p class="fs-4">Edit Category</p>
+							<div class="d-flex justify-content-start">
+							    <a href="/admin/category" class="text-decoration-none">
+							        <i class="fa-solid fa-arrow-left"></i> Back
+							    </a>
+							</div>
 							<th:block th:if="${session.succMsg}">
 								<p class="text-success fw-bold">[[${session.succMsg}]]</p>
 								<th:block th:text="${@commnServiceImpl.removeSessionMessage()}"></th:block>
@@ -21,9 +27,9 @@
 							<th:block th:if="${session.errorMsg}">
 								<p class="text-danger fw-bold">[[${session.errorMsg}]]</p>
 								<th:block th:text="${@commnServiceImpl.removeSessionMessage()}"></th:block>
-							</th:block>
-
+							</th:block>					
 						</div>
+						
 						<div class="card-body">
 							<form action="/admin/updateCategory" method="post"
 								enctype="multipart/form-data">
